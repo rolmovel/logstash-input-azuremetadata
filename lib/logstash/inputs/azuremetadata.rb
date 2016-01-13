@@ -9,7 +9,8 @@ require 'openssl'
 require 'uri'
 require 'net/https'
 require 'json'
-
+require 'crack/json'
+require 'crack/xml'
 # Generate a repeating message.
 #
 # Azure metadata logstash input.
@@ -42,6 +43,8 @@ class LogStash::Inputs::Example < LogStash::Inputs::Base
   config :access_key, :validate => :string
   # Azure token lifetime.
   config :lifetime, :validate => :number, :default => 1
+  # Output codec: XML or JSON.
+  config :output, :validate  => :string
 
   # Set how frequently messages should be sent.
   #
@@ -57,7 +60,12 @@ class LogStash::Inputs::Example < LogStash::Inputs::Base
     # we can abort the loop if stop? becomes true
     while !stop?
       metric = send(@namespace,@hub,@key_name,@access_key, @lifetime)
-      event = LogStash::Event.new("message" => metric.body, "host" => @host)
+      if @output == 'JSON'
+        event = LogStash::Event.new("message" => Crack::XML.parse(metric.body), "host" => @host)
+      else
+        event = LogStash::Event.new("message" => metric.body, "host" => @host)
+      end
+
       decorate(event)
       queue << event
       # because the sleep interval can be big, when shutdown happens
