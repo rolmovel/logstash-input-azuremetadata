@@ -11,7 +11,7 @@ require 'net/https'
 require 'json'
 require 'crack/json'
 require 'crack/xml'
-# Generate a repeating message.
+# Input plugin to connect to Azure Event Hub in order to get the partitions metadata.
 #
 # Azure metadata logstash input.
 # Using hashes:
@@ -33,6 +33,8 @@ class LogStash::Inputs::Example < LogStash::Inputs::Base
   # If undefined, Logstash will complain, even if codec is unused.
   default :codec, "plain"
 
+  # Azure endpoint.
+  config :endpoint, :validate => :string  
   # Azure namespace.
   config :namespace, :validate => :string
   # Azure hub.
@@ -95,7 +97,8 @@ class LogStash::Inputs::Example < LogStash::Inputs::Base
   end
 
   def url(namespace, hub)
-    "https://#{namespace}.servicebus.windows.net/#{hub}/consumergroups/$default/partitions"
+    # "https://{namespace}.servicebus.windows.net/{hub}/consumergroups/$default/partitions"
+    @endpoint.gsub("\{namespace\}", @namespace).gsub("\{hub\}", @hub)
   end
 
   def send(namespace, hub, key_name, access_key, sig_lifetime)
